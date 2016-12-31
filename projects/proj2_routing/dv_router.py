@@ -19,6 +19,10 @@ class DVRouter(basics.DVRouterBase):
         You probably want to do some additional initialization here.
 
         """
+        self.cv = {} # distance vector
+        self.rt = {}
+        self.route = {}
+        self.allEntity = set()
         self.start_timer()  # Starts calling handle_timer() at correct rate
 
     def handle_link_up(self, port, latency):
@@ -29,7 +33,10 @@ class DVRouter(basics.DVRouterBase):
         in.
 
         """
+        # self.cv[]
+        print("attached link")
         pass
+
 
     def handle_link_down(self, port):
         """
@@ -38,6 +45,7 @@ class DVRouter(basics.DVRouterBase):
         The port number used by the link is passed in.
 
         """
+        print(self.name + ": " + str(port))
         pass
 
     def handle_rx(self, packet, port):
@@ -50,15 +58,24 @@ class DVRouter(basics.DVRouterBase):
         You definitely want to fill this in.
 
         """
-        #self.log("RX %s on %s (%s)", packet, port, api.current_time())
         if isinstance(packet, basics.RoutePacket):
+            print(packet)
             pass
         elif isinstance(packet, basics.HostDiscoveryPacket):
-            pass
+            if packet.src.name in self.cv and self.cv[packet.src.name] == port:
+                return
+            self.cv[packet.src.name] = port
+            self.updateDV()
         else:
             # Totally wrong behavior for the sake of demonstration only: send
             # the packet back to where it came from!
-            self.send(packet, port=port)
+            print(packet, port)
+            if packet.dst.name in self.route:
+                outport = self.route[packet.dst.name]
+                self.send(packet, port=outport)
+
+    def updateDV(self):
+        self.route = self.cv
 
     def handle_timer(self):
         """
